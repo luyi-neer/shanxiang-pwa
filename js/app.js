@@ -117,7 +117,7 @@ const App = {
     document.getElementById('back-btn').addEventListener('click', () => { location.hash = '#/' })
 
     try {
-      const data = await WeatherAPI.getForecast(peak.lat, peak.lon, peak.elevation)
+      const data = await WeatherAPI.getForecast(peak.lat, peak.lon)
       this.renderWeather(data, peak)
     } catch (e) {
       this.$app.querySelector('.loading').innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>天气数据加载失败</p></div>`

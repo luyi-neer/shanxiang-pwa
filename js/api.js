@@ -1,11 +1,10 @@
 const WeatherAPI = {
   BASE_URL: 'https://api.open-meteo.com/v1/forecast',
 
-  async getForecast(lat, lon, elevation) {
+  async getForecast(lat, lon) {
     const params = new URLSearchParams({
       latitude: lat,
       longitude: lon,
-      elevation: elevation,
       hourly: 'temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation_probability,uv_index,apparent_temperature,visibility',
       daily: 'temperature_2m_max,temperature_2m_min,sunrise,sunset',
       timezone: 'Asia/Shanghai',
