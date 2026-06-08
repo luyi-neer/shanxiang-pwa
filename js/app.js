@@ -111,7 +111,7 @@ const App = {
           <span>难度 ${'★'.repeat(peak.difficulty)}</span>
         </div>
       </div>
-      <div class="loading">加载天气数据中</div>
+      <div class="loading">知天时，择良日，山野自有同行人</div>
     `
 
     document.getElementById('back-btn').addEventListener('click', () => { location.hash = '#/' })
@@ -201,7 +201,7 @@ const App = {
       if (!peakId) return
       const peak = peaks.find(p => p.id === peakId)
       const container = document.getElementById('alert-content')
-      container.innerHTML = '<div class="loading">查询预警中</div>'
+      container.innerHTML = '<div class="loading">知天时，择良日，山野自有同行人</div>'
 
       try {
         const data = await WeatherAPI.getAlerts(peak.lat, peak.lon)
