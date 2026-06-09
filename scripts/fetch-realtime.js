@@ -10,43 +10,55 @@ const peaks = [
   '牛心山','岗什卡','小五台','海坨山'
 ]
 
-const WEATHER_KEYWORDS = ['晴','阴','雨','雪','风','雾','温度','℃','度','冷','热','天气','能见度','日照','云','霜','冰']
+const WEATHER_KEYWORDS = ['晴','阴','雨','雪','风','雾','温度','℃','度','冷','热','天气','能见度','日照','云','霜','冰','湿','干','紫外']
 
-async function searchXiaohongshu(browser, peakName) {
+async function searchDouyin(browser, peakName) {
   const page = await browser.newPage()
   await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+  await page.setViewport({ width: 1280, height: 800 })
 
   const items = []
   try {
-    const url = `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(peakName + ' 天气')}&source=web_search_result_notes`
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 })
-    await new Promise(r => setTimeout(r, 2000))
+    const url = `https://www.douyin.com/search/${encodeURIComponent(peakName + ' 天气')}?type=video`
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 })
+    await new Promise(r => setTimeout(r, 3000))
 
     const notes = await page.evaluate(() => {
-      const cards = document.querySelectorAll('.note-item, [data-v-a264b01a], .feeds-page .note-item, section.note-item')
       const results = []
+      const cards = document.querySelectorAll('[class*="video-card"], [class*="search-result"], li[class*="item"], div[class*="PlayerContainer"], a[href*="/video/"]')
       cards.forEach(card => {
-        const title = card.querySelector('.title, h3, [class*="title"]')?.textContent?.trim() || ''
-        const desc = card.querySelector('.desc, p, [class*="desc"]')?.textContent?.trim() || ''
-        const time = card.querySelector('.time, [class*="time"], [class*="date"]')?.textContent?.trim() || ''
-        if (title || desc) {
-          results.push({ title, desc, time })
+        const titleEl = card.querySelector('[class*="title"], [class*="desc"], p, span')
+        const title = titleEl?.textContent?.trim() || ''
+        const parent = card.closest('[class*="item"]') || card.parentElement
+        const extra = parent?.querySelector('[class*="extra"], [class*="info"], [class*="author"]')?.textContent?.trim() || ''
+        if (title.length > 5) {
+          results.push({ title: title.slice(0, 150), extra })
         }
       })
-      return results.slice(0, 5)
+      return results.slice(0, 8)
     })
 
-    const today = new Date()
     for (const note of notes) {
-      const text = note.title + ' ' + note.desc
+      const text = note.title + ' ' + note.extra
       const hasWeather = WEATHER_KEYWORDS.some(k => text.includes(k))
-      const isRecent = note.time.includes('今天') || note.time.includes('小时前') || note.time.includes('刚刚') || note.time.includes('分钟前')
-
-      if (hasWeather && (isRecent || !note.time)) {
+      if (hasWeather) {
         items.push({
-          content: (note.title + (note.desc ? '：' + note.desc : '')).slice(0, 150),
-          source: '小红书'
+          content: note.title,
+          source: '抖音'
         })
+      }
+    }
+
+    if (items.length === 0) {
+      const pageText = await page.evaluate(() => document.body.innerText.slice(0, 5000))
+      const lines = pageText.split('\n').filter(l => l.length > 10 && l.length < 200)
+      for (const line of lines) {
+        const hasWeather = WEATHER_KEYWORDS.some(k => line.includes(k))
+        const hasPeak = line.includes(peakName) || line.includes('天气')
+        if (hasWeather && hasPeak) {
+          items.push({ content: line.trim().slice(0, 150), source: '抖音' })
+          if (items.length >= 3) break
+        }
       }
     }
   } catch (e) {
@@ -64,7 +76,7 @@ async function main() {
 
   const browser = await puppeteer.launch({
     headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
   })
 
   const results = {}
@@ -72,10 +84,12 @@ async function main() {
 
   for (const peak of peaks) {
     console.log(`正在搜索: ${peak}`)
-    const items = await searchXiaohongshu(browser, peak)
+    const items = await searchDouyin(browser, peak)
     if (items.length > 0) {
-      results[peak] = { peak, date: today, items, source: '小红书' }
+      results[peak] = { peak, date: today, items, source: '抖音' }
       console.log(`  找到 ${items.length} 条`)
+    } else {
+      console.log(`  无数据`)
     }
     await new Promise(r => setTimeout(r, 3000 + Math.random() * 2000))
   }
