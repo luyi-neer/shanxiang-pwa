@@ -118,7 +118,7 @@ const App = {
           <h1>山象</h1>
           <p>${peaks.length} 座山峰 · 天气预警</p>
         </div>
-        <div class="pull-hint" id="pull-hint">↓ 下拉刷新</div>
+        <div class="pull-hint" id="pull-hint">知天时，择良日，山野自有同行人</div>
         <div class="filter-bar">
           <div class="custom-select" id="province-select">
             <div class="select-trigger">${App._selectedProvince || '全部省份'} <span class="select-arrow">▾</span></div>

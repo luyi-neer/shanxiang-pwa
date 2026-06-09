@@ -80,6 +80,8 @@ body {
   overflow-x: auto;
   padding: 4px 0;
   -webkit-overflow-scrolling: touch;
+  position: relative;
+  z-index: 10;
 }
 
 .filter-bar::-webkit-scrollbar { display: none; }
@@ -154,6 +156,8 @@ body {
   height: 0;
   overflow: visible;
   margin-bottom: 8px;
+  position: relative;
+  z-index: 5;
 }
 
 .peak-meta {
