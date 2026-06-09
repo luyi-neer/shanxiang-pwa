@@ -110,11 +110,15 @@ const App = {
           <span>${peak.regionTag}</span>
           <span>难度 ${'★'.repeat(peak.difficulty)}</span>
         </div>
+        ${peak.quote ? `<div class="mountain-quote">"${peak.quote}"</div>` : ''}
       </div>
+      <div id="realtime-container"></div>
       <div class="loading">知天时，择良日，山野自有同行人</div>
     `
 
     document.getElementById('back-btn').addEventListener('click', () => { location.hash = '#/' })
+
+    this.loadRealtime(peak)
 
     try {
       const data = await WeatherAPI.getForecast(peak.lat, peak.lon)
@@ -176,6 +180,31 @@ const App = {
         <div class="section-title">7日预报</div>
         <div class="daily-list">${dailyHtml}</div>
       `
+    }
+  },
+
+  async loadRealtime(peak) {
+    const container = document.getElementById('realtime-container')
+    if (!container) return
+    try {
+      const res = await fetch(`realtime/latest.json`)
+      if (!res.ok) return
+      const json = await res.json()
+      const data = json.data && json.data[peak.name]
+      if (!data || !data.items || data.items.length === 0) return
+      const today = new Date().toISOString().split('T')[0]
+      if (data.date !== today) return
+      container.innerHTML = `
+        <div class="realtime-section">
+          <div class="section-label">今日实况 · 来自社交分享</div>
+          ${data.items.map(item => `
+            <div class="realtime-item">${item.content}</div>
+          `).join('')}
+          <div class="realtime-source">数据来源：${data.source || '社交媒体'} · ${data.date}</div>
+        </div>
+      `
+    } catch (e) {
+      // 无实况数据不展示
     }
   },
 
