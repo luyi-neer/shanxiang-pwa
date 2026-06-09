@@ -10,7 +10,51 @@ const App = {
         tab.classList.add('active')
       })
     })
+    this._bindListEvents()
     this.route()
+  },
+
+  _bindListEvents() {
+    this.$app.addEventListener('click', (e) => {
+      const trigger = e.target.closest('.select-trigger')
+      if (trigger) {
+        e.stopPropagation()
+        const sel = trigger.closest('.custom-select')
+        const options = sel.querySelector('.select-options')
+        this.$app.querySelectorAll('.select-options.open').forEach(o => { if (o !== options) o.classList.remove('open') })
+        options.classList.toggle('open')
+        const search = sel.querySelector('.select-search')
+        if (search && options.classList.contains('open')) setTimeout(() => search.focus(), 50)
+        return
+      }
+      const opt = e.target.closest('.select-option')
+      if (opt) {
+        e.stopPropagation()
+        const sel = opt.closest('.custom-select')
+        sel.querySelector('.select-options').classList.remove('open')
+        if (sel.id === 'province-select') { App._selectedProvince = opt.dataset.val; App._renderList() }
+        else if (sel.id === 'sort-select') { App._sortBy = opt.dataset.val; App._renderList() }
+        return
+      }
+      if (e.target.closest('.select-search')) { e.stopPropagation(); return }
+      const chip = e.target.closest('.filter-chip')
+      if (chip) { App._selectedDifficulty = parseInt(chip.dataset.diff); App._renderList(); return }
+      const fav = e.target.closest('.fav-btn')
+      if (fav) { e.stopPropagation(); this.toggleFavorite(fav.dataset.fav); App._renderList(); return }
+      const card = e.target.closest('.peak-card')
+      if (card) { location.hash = `#/peak/${card.dataset.id}`; return }
+      this.$app.querySelectorAll('.select-options.open').forEach(o => o.classList.remove('open'))
+    })
+
+    this.$app.addEventListener('input', (e) => {
+      if (e.target.classList.contains('select-search')) {
+        const q = e.target.value.toLowerCase()
+        const sel = e.target.closest('.custom-select')
+        sel.querySelectorAll('.select-option').forEach(opt => {
+          opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none'
+        })
+      }
+    })
   },
 
   route() {
@@ -49,23 +93,23 @@ const App = {
   },
 
   showList() {
-    let selectedProvince = ''
-    let selectedDifficulty = 0
-    let sortBy = 'default'
+    App._selectedProvince = App._selectedProvince || ''
+    App._selectedDifficulty = App._selectedDifficulty || 0
+    App._sortBy = App._sortBy || 'default'
     const provinces = [...new Set(peaks.map(p => p.province))].sort()
 
-    const render = () => {
+    App._renderList = () => {
       const favs = this.getFavorites()
       let filtered = peaks
-      if (selectedProvince) filtered = filtered.filter(p => p.province === selectedProvince)
-      if (selectedDifficulty) filtered = filtered.filter(p => p.difficulty === selectedDifficulty)
+      if (App._selectedProvince) filtered = filtered.filter(p => p.province === App._selectedProvince)
+      if (App._selectedDifficulty) filtered = filtered.filter(p => p.difficulty === App._selectedDifficulty)
 
       filtered = [...filtered].sort((a, b) => {
         const aFav = favs.includes(a.id) ? 0 : 1
         const bFav = favs.includes(b.id) ? 0 : 1
         if (aFav !== bFav) return aFav - bFav
-        if (sortBy === 'elevation') return b.elevation - a.elevation
-        if (sortBy === 'difficulty') return b.difficulty - a.difficulty
+        if (App._sortBy === 'elevation') return b.elevation - a.elevation
+        if (App._sortBy === 'difficulty') return b.difficulty - a.difficulty
         return 0
       })
 
@@ -77,24 +121,24 @@ const App = {
         <div class="pull-hint" id="pull-hint">↓ 下拉刷新</div>
         <div class="filter-bar">
           <div class="custom-select" id="province-select">
-            <div class="select-trigger">${selectedProvince || '全部省份'} <span class="select-arrow">▾</span></div>
+            <div class="select-trigger">${App._selectedProvince || '全部省份'} <span class="select-arrow">▾</span></div>
             <div class="select-options">
               <input class="select-search" placeholder="搜索省份..." id="province-search" />
-              <div class="select-option ${!selectedProvince ? 'selected' : ''}" data-val="">全部省份</div>
-              ${provinces.map(p => `<div class="select-option ${p === selectedProvince ? 'selected' : ''}" data-val="${p}">${p}</div>`).join('')}
+              <div class="select-option ${!App._selectedProvince ? 'selected' : ''}" data-val="">全部省份</div>
+              ${provinces.map(p => `<div class="select-option ${p === App._selectedProvince ? 'selected' : ''}" data-val="${p}">${p}</div>`).join('')}
             </div>
           </div>
           <div class="custom-select" id="sort-select">
-            <div class="select-trigger">${sortBy === 'default' ? '默认排序' : sortBy === 'elevation' ? '海拔↓' : '难度↓'} <span class="select-arrow">▾</span></div>
+            <div class="select-trigger">${App._sortBy === 'default' ? '默认排序' : App._sortBy === 'elevation' ? '海拔↓' : '难度↓'} <span class="select-arrow">▾</span></div>
             <div class="select-options">
-              <div class="select-option ${sortBy === 'default' ? 'selected' : ''}" data-val="default">默认排序</div>
-              <div class="select-option ${sortBy === 'elevation' ? 'selected' : ''}" data-val="elevation">海拔↓</div>
-              <div class="select-option ${sortBy === 'difficulty' ? 'selected' : ''}" data-val="difficulty">难度↓</div>
+              <div class="select-option ${App._sortBy === 'default' ? 'selected' : ''}" data-val="default">默认排序</div>
+              <div class="select-option ${App._sortBy === 'elevation' ? 'selected' : ''}" data-val="elevation">海拔↓</div>
+              <div class="select-option ${App._sortBy === 'difficulty' ? 'selected' : ''}" data-val="difficulty">难度↓</div>
             </div>
           </div>
         </div>
         <div class="filter-bar">
-          ${[0,1,2,3,4,5].map(d => `<span class="filter-chip ${d === selectedDifficulty ? 'active' : ''}" data-diff="${d}">${d === 0 ? '全部' : '★'.repeat(d)}</span>`).join('')}
+          ${[0,1,2,3,4,5].map(d => `<span class="filter-chip ${d === App._selectedDifficulty ? 'active' : ''}" data-diff="${d}">${d === 0 ? '全部' : '★'.repeat(d)}</span>`).join('')}
         </div>
         <div class="peak-list">
           ${filtered.map(p => {
@@ -121,50 +165,8 @@ const App = {
 
     }
 
-    render()
-
-    this.$app.addEventListener('click', (e) => {
-      const trigger = e.target.closest('.select-trigger')
-      if (trigger) {
-        e.stopPropagation()
-        const sel = trigger.closest('.custom-select')
-        const options = sel.querySelector('.select-options')
-        this.$app.querySelectorAll('.select-options.open').forEach(o => { if (o !== options) o.classList.remove('open') })
-        options.classList.toggle('open')
-        const search = sel.querySelector('.select-search')
-        if (search && options.classList.contains('open')) setTimeout(() => search.focus(), 50)
-        return
-      }
-      const opt = e.target.closest('.select-option')
-      if (opt) {
-        e.stopPropagation()
-        const sel = opt.closest('.custom-select')
-        sel.querySelector('.select-options').classList.remove('open')
-        if (sel.id === 'province-select') { selectedProvince = opt.dataset.val; render() }
-        else if (sel.id === 'sort-select') { sortBy = opt.dataset.val; render() }
-        return
-      }
-      if (e.target.closest('.select-search')) { e.stopPropagation(); return }
-      const chip = e.target.closest('.filter-chip')
-      if (chip) { selectedDifficulty = parseInt(chip.dataset.diff); render(); return }
-      const fav = e.target.closest('.fav-btn')
-      if (fav) { e.stopPropagation(); this.toggleFavorite(fav.dataset.fav); render(); return }
-      const card = e.target.closest('.peak-card')
-      if (card) { location.hash = `#/peak/${card.dataset.id}`; return }
-      this.$app.querySelectorAll('.select-options.open').forEach(o => o.classList.remove('open'))
-    })
-
-    this.$app.addEventListener('input', (e) => {
-      if (e.target.classList.contains('select-search')) {
-        const q = e.target.value.toLowerCase()
-        const sel = e.target.closest('.custom-select')
-        sel.querySelectorAll('.select-option').forEach(opt => {
-          opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none'
-        })
-      }
-    })
-
-    this.initPullRefresh(render)
+    App._renderList()
+    this.initPullRefresh(App._renderList)
   },
 
   initPullRefresh(refreshFn) {
