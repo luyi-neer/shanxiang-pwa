@@ -20,7 +20,7 @@ async function searchXiaohongshu(browser, peakName) {
   try {
     const url = `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(peakName + ' 天气')}&source=web_search_result_notes`
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 })
-    await page.waitForTimeout(2000)
+    await new Promise(r => setTimeout(r, 2000))
 
     const notes = await page.evaluate(() => {
       const cards = document.querySelectorAll('.note-item, [data-v-a264b01a], .feeds-page .note-item, section.note-item')
