@@ -149,27 +149,32 @@ const App = {
   initPullRefresh(refreshFn) {
     const app = this.$app
     let startY = 0, pulling = false
-    const hint = document.getElementById('pull-hint')
 
-    app.addEventListener('touchstart', e => {
+    const onStart = e => {
+      const hint = document.getElementById('pull-hint')
+      if (!hint) return
       if (app.scrollTop === 0 || window.scrollY === 0) {
         startY = e.touches[0].clientY
         pulling = true
       }
-    }, { passive: true })
+    }
 
-    app.addEventListener('touchmove', e => {
+    const onMove = e => {
       if (!pulling) return
+      const hint = document.getElementById('pull-hint')
+      if (!hint) { pulling = false; return }
       const dy = e.touches[0].clientY - startY
       if (dy > 10 && dy < 120) {
         hint.style.opacity = Math.min(dy / 60, 1)
         hint.style.transform = `translateY(${Math.min(dy / 2, 30)}px)`
       }
-    }, { passive: true })
+    }
 
-    app.addEventListener('touchend', () => {
+    const onEnd = () => {
       if (!pulling) return
       pulling = false
+      const hint = document.getElementById('pull-hint')
+      if (!hint) return
       const opacity = parseFloat(hint.style.opacity || 0)
       if (opacity >= 1) {
         hint.textContent = '刷新中...'
@@ -181,7 +186,11 @@ const App = {
         hint.style.opacity = 0
         hint.style.transform = ''
       }
-    }, { passive: true })
+    }
+
+    app.addEventListener('touchstart', onStart, { passive: true })
+    app.addEventListener('touchmove', onMove, { passive: true })
+    app.addEventListener('touchend', onEnd, { passive: true })
   },
 
   initSwipeBack() {
