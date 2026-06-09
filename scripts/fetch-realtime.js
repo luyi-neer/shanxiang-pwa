@@ -1,4 +1,3 @@
-const puppeteer = require('puppeteer')
 const fs = require('fs')
 const path = require('path')
 
@@ -10,91 +9,111 @@ const peaks = [
   '牛心山','岗什卡','小五台','海坨山'
 ]
 
-const WEATHER_KEYWORDS = ['晴','阴','雨','雪','风','雾','温度','℃','度','冷','热','天气','能见度','日照','云','霜','冰','湿','干','紫外']
+const WEATHER_KEYWORDS = ['晴','阴','雨','雪','风','雾','温度','℃','度','冷','热','天气','能见度','日照','云','霜','冰','湿','干','紫外','大雾','暴雨','冰雹','雷','多云']
 
-async function searchDouyin(browser, peakName) {
-  const page = await browser.newPage()
-  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-  await page.setViewport({ width: 1280, height: 800 })
+async function searchWeibo(peakName) {
+  const query = encodeURIComponent(peakName + ' 天气')
+  const url = `https://m.weibo.cn/api/container/getIndex?containerid=100103type%3D1%26q%3D${query}&page_type=searchall`
 
   const items = []
   try {
-    const url = `https://www.douyin.com/search/${encodeURIComponent(peakName + ' 天气')}?type=video`
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 })
-    await new Promise(r => setTimeout(r, 3000))
-
-    const notes = await page.evaluate(() => {
-      const results = []
-      const cards = document.querySelectorAll('[class*="video-card"], [class*="search-result"], li[class*="item"], div[class*="PlayerContainer"], a[href*="/video/"]')
-      cards.forEach(card => {
-        const titleEl = card.querySelector('[class*="title"], [class*="desc"], p, span')
-        const title = titleEl?.textContent?.trim() || ''
-        const parent = card.closest('[class*="item"]') || card.parentElement
-        const extra = parent?.querySelector('[class*="extra"], [class*="info"], [class*="author"]')?.textContent?.trim() || ''
-        if (title.length > 5) {
-          results.push({ title: title.slice(0, 150), extra })
-        }
-      })
-      return results.slice(0, 8)
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+        'Accept': 'application/json, text/plain, */*',
+        'Referer': 'https://m.weibo.cn/search?containerid=100103type%3D1%26q%3D' + query
+      }
     })
 
-    for (const note of notes) {
-      const text = note.title + ' ' + note.extra
-      const hasWeather = WEATHER_KEYWORDS.some(k => text.includes(k))
-      if (hasWeather) {
-        items.push({
-          content: note.title,
-          source: '抖音'
-        })
-      }
+    if (!res.ok) {
+      console.log(`  HTTP ${res.status}`)
+      return items
     }
 
-    if (items.length === 0) {
-      const pageText = await page.evaluate(() => document.body.innerText.slice(0, 5000))
-      const lines = pageText.split('\n').filter(l => l.length > 10 && l.length < 200)
-      for (const line of lines) {
-        const hasWeather = WEATHER_KEYWORDS.some(k => line.includes(k))
-        const hasPeak = line.includes(peakName) || line.includes('天气')
-        if (hasWeather && hasPeak) {
-          items.push({ content: line.trim().slice(0, 150), source: '抖音' })
-          if (items.length >= 3) break
+    const json = await res.json()
+    const cards = json?.data?.cards || []
+
+    for (const card of cards) {
+      const mblogList = card.card_group || (card.mblog ? [card] : [])
+      for (const item of mblogList) {
+        const mblog = item.mblog || item
+        if (!mblog || !mblog.text) continue
+
+        const text = mblog.text.replace(/<[^>]+>/g, '').trim()
+        const hasWeather = WEATHER_KEYWORDS.some(k => text.includes(k))
+        const hasPeak = text.includes(peakName) || text.includes('天气')
+
+        if (hasWeather && hasPeak && text.length > 10) {
+          const createdAt = mblog.created_at || ''
+          items.push({
+            content: text.slice(0, 200),
+            source: '微博',
+            author: mblog.user?.screen_name || '',
+            time: createdAt
+          })
         }
+        if (items.length >= 5) break
       }
+      if (items.length >= 5) break
     }
   } catch (e) {
-    console.log(`  跳过 ${peakName}: ${e.message}`)
-  } finally {
-    await page.close()
+    console.log(`  错误: ${e.message}`)
   }
 
   return items
+}
+
+function isToday(timeStr) {
+  if (!timeStr) return true
+  const now = new Date()
+  const today = now.toISOString().split('T')[0]
+
+  if (timeStr.includes('分钟前') || timeStr.includes('小时前')) return true
+  if (timeStr.includes('今天')) return true
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(timeStr)) {
+    return timeStr.startsWith(today)
+  }
+
+  const match = timeStr.match(/(\d+)月(\d+)日/)
+  if (match) {
+    const m = parseInt(match[1])
+    const d = parseInt(match[2])
+    return m === (now.getMonth() + 1) && d === now.getDate()
+  }
+
+  return false
 }
 
 async function main() {
   const outputDir = path.join(__dirname, '..', 'realtime')
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true })
 
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
-  })
-
   const results = {}
   const today = new Date().toISOString().split('T')[0]
 
   for (const peak of peaks) {
     console.log(`正在搜索: ${peak}`)
-    const items = await searchDouyin(browser, peak)
-    if (items.length > 0) {
-      results[peak] = { peak, date: today, items, source: '抖音' }
-      console.log(`  找到 ${items.length} 条`)
+    const items = await searchWeibo(peak)
+
+    const todayItems = items.filter(item => isToday(item.time))
+
+    if (todayItems.length > 0) {
+      results[peak] = {
+        peak,
+        date: today,
+        items: todayItems.map(({ content, source, author }) => ({ content, source, author })),
+        source: '微博'
+      }
+      console.log(`  找到 ${todayItems.length} 条今日数据`)
+    } else if (items.length > 0) {
+      console.log(`  找到 ${items.length} 条但非今日`)
     } else {
       console.log(`  无数据`)
     }
-    await new Promise(r => setTimeout(r, 3000 + Math.random() * 2000))
-  }
 
-  await browser.close()
+    await new Promise(r => setTimeout(r, 2000 + Math.random() * 2000))
+  }
 
   fs.writeFileSync(
     path.join(outputDir, 'latest.json'),

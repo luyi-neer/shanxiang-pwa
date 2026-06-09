@@ -17,9 +17,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install puppeteer
-        run: npm install puppeteer
-
       - name: Fetch realtime data
         run: node scripts/fetch-realtime.js
 

@@ -1,0 +1,19 @@
+{
+  "appId": "com.shanxiang.app",
+  "appName": "shanxiang",
+  "webDir": "www",
+  "server": {
+    "url": "https://luyi-neer.github.io/shanxiang-pwa/",
+    "cleartext": true
+  },
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": true,
+      "style": "LIGHT",
+      "backgroundColor": "#2d5016"
+    }
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
