@@ -184,6 +184,36 @@ const App = {
     }, { passive: true })
   },
 
+  initSwipeBack() {
+    let startX = 0, startY = 0, swiping = false
+    const app = this.$app
+
+    app.addEventListener('touchstart', e => {
+      const x = e.touches[0].clientX
+      if (x < 40) {
+        startX = x
+        startY = e.touches[0].clientY
+        swiping = true
+      }
+    }, { passive: true })
+
+    app.addEventListener('touchmove', e => {
+      if (!swiping) return
+      const dx = e.touches[0].clientX - startX
+      const dy = Math.abs(e.touches[0].clientY - startY)
+      if (dy > dx) swiping = false
+    }, { passive: true })
+
+    app.addEventListener('touchend', e => {
+      if (!swiping) return
+      swiping = false
+      const endX = e.changedTouches[0].clientX
+      if (endX - startX > 80) {
+        location.hash = '#/'
+      }
+    }, { passive: true })
+  },
+
   async showDetail(peakId) {
     const peak = peaks.find(p => p.id === peakId)
     if (!peak) { location.hash = '#/'; return }
@@ -206,6 +236,7 @@ const App = {
 
     document.getElementById('back-btn').addEventListener('click', () => { location.hash = '#/' })
 
+    this.initSwipeBack()
     this.loadRealtime(peak)
 
     try {

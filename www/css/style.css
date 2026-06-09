@@ -184,7 +184,7 @@ body {
   color: #fff;
   margin: calc(-1 * (var(--safe-top) + 16px)) -16px 20px;
   padding: 24px 20px 24px;
-  padding-top: calc(var(--safe-top) + 20px);
+  padding-top: calc(var(--safe-top) + 40px);
   border-radius: 0 0 28px 28px;
 }
 
