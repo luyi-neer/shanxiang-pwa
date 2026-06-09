@@ -115,12 +115,12 @@ const App = {
         ${filtered.length === 0 ? '<div class="empty-state"><div class="icon">🔍</div><p>无匹配山峰</p></div>' : ''}
       `
 
-      document.querySelectorAll('.custom-select').forEach(sel => {
+      this.$app.querySelectorAll('.custom-select').forEach(sel => {
         const trigger = sel.querySelector('.select-trigger')
         const options = sel.querySelector('.select-options')
         trigger.addEventListener('click', (e) => {
           e.stopPropagation()
-          document.querySelectorAll('.select-options.open').forEach(o => { if (o !== options) o.classList.remove('open') })
+          this.$app.querySelectorAll('.select-options.open').forEach(o => { if (o !== options) o.classList.remove('open') })
           options.classList.toggle('open')
         })
         sel.querySelectorAll('.select-option').forEach(opt => {
@@ -138,8 +138,10 @@ const App = {
         })
       })
 
-      document.addEventListener('click', () => {
-        document.querySelectorAll('.select-options.open').forEach(o => o.classList.remove('open'))
+      this.$app.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-select')) {
+          this.$app.querySelectorAll('.select-options.open').forEach(o => o.classList.remove('open'))
+        }
       })
 
       this.$app.querySelectorAll('.filter-chip').forEach(chip => {
