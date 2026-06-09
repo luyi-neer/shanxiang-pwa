@@ -266,7 +266,7 @@ const App = {
         <div class="skeleton-block skeleton-md"></div>
         <div class="skeleton-block skeleton-sm"></div>
       </div>
-      <div class="loading">加载天气数据中...</div>
+      <div class="loading">知天时，择良日，山野自有同行人</div>
     `
 
     document.getElementById('back-btn').addEventListener('click', () => { location.hash = '#/' })
