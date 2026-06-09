@@ -32,50 +32,90 @@ const App = {
     })
   },
 
+  getFavorites() {
+    try { return JSON.parse(localStorage.getItem('sx_favorites') || '[]') }
+    catch { return [] }
+  },
+
+  toggleFavorite(peakId) {
+    const favs = this.getFavorites()
+    const idx = favs.indexOf(peakId)
+    if (idx >= 0) favs.splice(idx, 1)
+    else favs.push(peakId)
+    localStorage.setItem('sx_favorites', JSON.stringify(favs))
+  },
+
   showList() {
     let selectedProvince = ''
     let selectedDifficulty = 0
+    let sortBy = 'default'
     const provinces = [...new Set(peaks.map(p => p.province))].sort()
 
     const render = () => {
+      const favs = this.getFavorites()
       let filtered = peaks
       if (selectedProvince) filtered = filtered.filter(p => p.province === selectedProvince)
       if (selectedDifficulty) filtered = filtered.filter(p => p.difficulty === selectedDifficulty)
+
+      filtered = [...filtered].sort((a, b) => {
+        const aFav = favs.includes(a.id) ? 0 : 1
+        const bFav = favs.includes(b.id) ? 0 : 1
+        if (aFav !== bFav) return aFav - bFav
+        if (sortBy === 'elevation') return b.elevation - a.elevation
+        if (sortBy === 'difficulty') return b.difficulty - a.difficulty
+        return 0
+      })
 
       this.$app.innerHTML = `
         <div class="page-header">
           <h1>山象</h1>
           <p>${peaks.length} 座山峰 · 天气预警</p>
         </div>
+        <div class="pull-hint" id="pull-hint">↓ 下拉刷新</div>
         <div class="filter-bar">
           <select class="province-select" id="province-filter">
             <option value="">全部省份</option>
             ${provinces.map(p => `<option value="${p}" ${p === selectedProvince ? 'selected' : ''}>${p}</option>`).join('')}
+          </select>
+          <select class="province-select" id="sort-filter">
+            <option value="default" ${sortBy === 'default' ? 'selected' : ''}>默认排序</option>
+            <option value="elevation" ${sortBy === 'elevation' ? 'selected' : ''}>海拔↓</option>
+            <option value="difficulty" ${sortBy === 'difficulty' ? 'selected' : ''}>难度↓</option>
           </select>
         </div>
         <div class="filter-bar">
           ${[0,1,2,3,4,5].map(d => `<span class="filter-chip ${d === selectedDifficulty ? 'active' : ''}" data-diff="${d}">${d === 0 ? '全部' : '★'.repeat(d)}</span>`).join('')}
         </div>
         <div class="peak-list">
-          ${filtered.map(p => `
+          ${filtered.map(p => {
+            const isFav = favs.includes(p.id)
+            return `
             <div class="peak-card" data-id="${p.id}">
               <div class="peak-info">
-                <h3>${p.name}</h3>
+                <h3>${isFav ? '<span class="fav-star">♥</span> ' : ''}${p.name}</h3>
                 <div class="peak-meta">
                   <span>${p.elevation}m</span>
                   <span>${p.province}</span>
                   <span>${p.regionTag}</span>
                 </div>
               </div>
-              <span class="difficulty-badge diff-${p.difficulty}">★${p.difficulty}</span>
-            </div>
-          `).join('')}
+              <div class="peak-actions">
+                <span class="fav-btn ${isFav ? 'fav-active' : ''}" data-fav="${p.id}">♥</span>
+                <span class="difficulty-badge diff-${p.difficulty}">★${p.difficulty}</span>
+              </div>
+            </div>`
+          }).join('')}
         </div>
         ${filtered.length === 0 ? '<div class="empty-state"><div class="icon">🔍</div><p>无匹配山峰</p></div>' : ''}
       `
 
       document.getElementById('province-filter').addEventListener('change', e => {
         selectedProvince = e.target.value
+        render()
+      })
+
+      document.getElementById('sort-filter').addEventListener('change', e => {
+        sortBy = e.target.value
         render()
       })
 
@@ -86,14 +126,62 @@ const App = {
         })
       })
 
+      this.$app.querySelectorAll('.fav-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          this.toggleFavorite(btn.dataset.fav)
+          render()
+        })
+      })
+
       this.$app.querySelectorAll('.peak-card').forEach(card => {
         card.addEventListener('click', () => {
           location.hash = `#/peak/${card.dataset.id}`
         })
       })
+
+      this.initPullRefresh(render)
     }
 
     render()
+  },
+
+  initPullRefresh(refreshFn) {
+    const app = this.$app
+    let startY = 0, pulling = false
+    const hint = document.getElementById('pull-hint')
+
+    app.addEventListener('touchstart', e => {
+      if (app.scrollTop === 0 || window.scrollY === 0) {
+        startY = e.touches[0].clientY
+        pulling = true
+      }
+    }, { passive: true })
+
+    app.addEventListener('touchmove', e => {
+      if (!pulling) return
+      const dy = e.touches[0].clientY - startY
+      if (dy > 10 && dy < 120) {
+        hint.style.opacity = Math.min(dy / 60, 1)
+        hint.style.transform = `translateY(${Math.min(dy / 2, 30)}px)`
+      }
+    }, { passive: true })
+
+    app.addEventListener('touchend', () => {
+      if (!pulling) return
+      pulling = false
+      const opacity = parseFloat(hint.style.opacity || 0)
+      if (opacity >= 1) {
+        hint.textContent = '刷新中...'
+        hint.style.opacity = 1
+        setTimeout(() => {
+          refreshFn()
+        }, 500)
+      } else {
+        hint.style.opacity = 0
+        hint.style.transform = ''
+      }
+    }, { passive: true })
   },
 
   async showDetail(peakId) {
