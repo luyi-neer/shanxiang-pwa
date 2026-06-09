@@ -165,11 +165,22 @@ const App = {
     const hourlyHtml = h.time.slice(currentHourIdx, currentHourIdx + 24).map((t, i) => {
       const idx = currentHourIdx + i
       const hour = new Date(t).getHours()
-      return `<div class="hour-card">
+      const precip = h.precipitation_probability[idx]
+      const cloud = h.cloud_cover ? h.cloud_cover[idx] : 0
+      const isNight = hour >= 19 || hour <= 5
+
+      let hourClass = 'hour-clear'
+      let hourIcon = isNight ? '🌙' : '☀️'
+      if (precip > 60) { hourClass = 'hour-rain'; hourIcon = '🌧️' }
+      else if (precip > 30) { hourClass = 'hour-drizzle'; hourIcon = '🌦️' }
+      else if (cloud > 70) { hourClass = 'hour-cloudy'; hourIcon = isNight ? '☁️' : '⛅' }
+      else if (cloud > 40) { hourClass = 'hour-partcloud'; hourIcon = isNight ? '🌙' : '⛅' }
+
+      return `<div class="hour-card ${hourClass}">
         <div class="time">${hour}:00</div>
-        <div class="hour-precip">${h.precipitation_probability[idx]}%</div>
+        <div class="hour-icon">${hourIcon}</div>
         <div class="temp">${h.temperature_2m[idx]}°</div>
-        <div class="wind">${h.wind_speed_10m[idx]}km/h</div>
+        <div class="hour-precip">${precip}%💧</div>
       </div>`
     }).join('')
 
@@ -177,10 +188,13 @@ const App = {
     const dailyHtml = d.time.map((t, i) => {
       const date = new Date(t)
       const code = d.weathercode?.[i] ?? 0
+      const mm = date.getMonth() + 1
+      const dd = date.getDate()
       return `<div class="daily-item" data-day="${i}">
         <div class="daily-main">
           <span class="day-icon">${weatherIcon(code)}</span>
           <span class="day">${i === 0 ? '今天' : weekdays[date.getDay()]}</span>
+          <span class="day-date">${mm}/${dd}</span>
           <span class="day-desc">${weatherDesc(code)}</span>
           <span class="temps"><span class="high">${d.temperature_2m_max[i]}°</span><span class="low">${d.temperature_2m_min[i]}°</span></span>
           <span class="day-expand">▾</span>

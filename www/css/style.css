@@ -254,19 +254,28 @@ body {
 
 .hour-card {
   flex-shrink: 0;
-  background: var(--card);
   border-radius: 12px;
   padding: 12px 10px;
   min-width: 72px;
   text-align: center;
   box-shadow: var(--shadow);
   border: 1px solid rgba(26,92,46,0.05);
+  transition: transform .2s;
 }
 
+.hour-clear { background: linear-gradient(180deg, #fffde7 0%, #fff8e1 100%); border-color: rgba(255,193,7,0.15); }
+.hour-cloudy { background: linear-gradient(180deg, #eceff1 0%, #cfd8dc 100%); border-color: rgba(96,125,139,0.15); }
+.hour-partcloud { background: linear-gradient(180deg, #f1f8e9 0%, #e8f5e9 100%); border-color: rgba(76,175,80,0.1); }
+.hour-rain { background: linear-gradient(180deg, #e3f2fd 0%, #bbdefb 100%); border-color: rgba(33,150,243,0.2); }
+.hour-drizzle { background: linear-gradient(180deg, #e8f5e9 0%, #c8e6c9 100%); border-color: rgba(76,175,80,0.15); }
+
 .hour-card .time { font-size: 11px; color: var(--text-light); font-weight: 500; }
+.hour-card .hour-icon { font-size: 20px; margin: 6px 0; }
 .hour-card .hour-precip { font-size: 10px; color: #42a5f5; margin: 2px 0; }
 .hour-card .temp { font-size: 18px; font-weight: 700; margin: 4px 0; color: var(--text); }
-.hour-card .wind { font-size: 10px; color: var(--text-light); }
+
+.hour-rain .temp { color: #1565c0; }
+.hour-rain .time { color: #1976d2; }
 
 .daily-list { display: flex; flex-direction: column; gap: 8px; }
 
@@ -292,6 +301,7 @@ body {
 
 .daily-main .day-icon { font-size: 20px; }
 .daily-main .day { font-size: 14px; font-weight: 600; min-width: 40px; }
+.daily-main .day-date { font-size: 11px; color: var(--text-light); min-width: 36px; }
 .daily-main .day-desc { font-size: 12px; color: var(--text-light); flex: 1; }
 .daily-main .temps { font-size: 14px; display: flex; gap: 6px; }
 .daily-main .temps .high { font-weight: 700; color: var(--text); }
