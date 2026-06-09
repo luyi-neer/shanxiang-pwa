@@ -1,6 +1,6 @@
 {
   "appId": "com.shanxiang.app",
-  "appName": "shanxiang",
+  "appName": "山象",
   "webDir": "www",
   "server": {
     "url": "https://luyi-neer.github.io/shanxiang-pwa/",

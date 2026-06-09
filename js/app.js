@@ -20,6 +20,9 @@ const App = {
     } else if (hash === '#/alerts') {
       this.showAlerts()
       this.setActiveTab('/alerts')
+    } else if (hash === '#/mine') {
+      this.showMine()
+      this.setActiveTab('/mine')
     } else {
       this.showList()
       this.setActiveTab('/')
@@ -76,6 +79,7 @@ const App = {
           <div class="custom-select" id="province-select">
             <div class="select-trigger">${selectedProvince || '全部省份'} <span class="select-arrow">▾</span></div>
             <div class="select-options">
+              <input class="select-search" placeholder="搜索省份..." id="province-search" />
               <div class="select-option ${!selectedProvince ? 'selected' : ''}" data-val="">全部省份</div>
               ${provinces.map(p => `<div class="select-option ${p === selectedProvince ? 'selected' : ''}" data-val="${p}">${p}</div>`).join('')}
             </div>
@@ -122,6 +126,8 @@ const App = {
           e.stopPropagation()
           this.$app.querySelectorAll('.select-options.open').forEach(o => { if (o !== options) o.classList.remove('open') })
           options.classList.toggle('open')
+          const search = sel.querySelector('.select-search')
+          if (search && options.classList.contains('open')) search.focus()
         })
         sel.querySelectorAll('.select-option').forEach(opt => {
           opt.addEventListener('click', (e) => {
@@ -136,6 +142,16 @@ const App = {
             }
           })
         })
+        const search = sel.querySelector('.select-search')
+        if (search) {
+          search.addEventListener('click', e => e.stopPropagation())
+          search.addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase()
+            sel.querySelectorAll('.select-option').forEach(opt => {
+              opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none'
+            })
+          })
+        }
       })
 
       this.$app.addEventListener('click', (e) => {
@@ -265,7 +281,12 @@ const App = {
         ${peak.quote ? `<div class="mountain-quote">"${peak.quote}"</div>` : ''}
       </div>
       <div id="realtime-container"></div>
-      <div class="loading">知天时，择良日，山野自有同行人</div>
+      <div class="skeleton-wrap">
+        <div class="skeleton-block skeleton-lg"></div>
+        <div class="skeleton-block skeleton-md"></div>
+        <div class="skeleton-block skeleton-sm"></div>
+      </div>
+      <div class="loading">加载天气数据中...</div>
     `
 
     document.getElementById('back-btn').addEventListener('click', () => { location.hash = '#/' })
@@ -321,6 +342,7 @@ const App = {
       const precip = h.precipitation_probability[idx]
       const cloud = h.cloud_cover ? h.cloud_cover[idx] : 0
       const isNight = hour >= 19 || hour <= 5
+      const isNow = i === 0
 
       let hourClass = 'hour-clear'
       let hourIcon = isNight ? '🌙' : '☀️'
@@ -329,8 +351,8 @@ const App = {
       else if (cloud > 70) { hourClass = 'hour-cloudy'; hourIcon = isNight ? '☁️' : '⛅' }
       else if (cloud > 40) { hourClass = 'hour-partcloud'; hourIcon = isNight ? '🌙' : '⛅' }
 
-      return `<div class="hour-card ${hourClass}">
-        <div class="time">${hour}:00</div>
+      return `<div class="hour-card ${hourClass} ${isNow ? 'hour-now' : ''}">
+        <div class="time">${isNow ? '现在' : hour + ':00'}</div>
         <div class="hour-icon">${hourIcon}</div>
         <div class="temp">${h.temperature_2m[idx]}°</div>
         <div class="hour-precip">${precip}%💧</div>
@@ -338,18 +360,28 @@ const App = {
     }).join('')
 
     const weekdays = ['周日','周一','周二','周三','周四','周五','周六']
+    const allMax = Math.max(...d.temperature_2m_max)
+    const allMin = Math.min(...d.temperature_2m_min)
+    const tempRange = allMax - allMin || 1
+
     const dailyHtml = d.time.map((t, i) => {
       const date = new Date(t)
       const code = d.weathercode?.[i] ?? 0
       const mm = date.getMonth() + 1
       const dd = date.getDate()
+      const highPct = ((d.temperature_2m_max[i] - allMin) / tempRange * 100).toFixed(0)
+      const lowPct = ((d.temperature_2m_min[i] - allMin) / tempRange * 100).toFixed(0)
       return `<div class="daily-item" data-day="${i}">
         <div class="daily-main">
           <span class="day-icon">${weatherIcon(code)}</span>
           <span class="day">${i === 0 ? '今天' : weekdays[date.getDay()]}</span>
           <span class="day-date">${mm}/${dd}</span>
           <span class="day-desc">${weatherDesc(code)}</span>
-          <span class="temps"><span class="high">${d.temperature_2m_max[i]}°</span><span class="low">${d.temperature_2m_min[i]}°</span></span>
+          <span class="temps">
+            <span class="low">${d.temperature_2m_min[i]}°</span>
+            <span class="temp-bar"><span class="temp-bar-fill" style="left:${lowPct}%;right:${100 - highPct}%"></span></span>
+            <span class="high">${d.temperature_2m_max[i]}°</span>
+          </span>
           <span class="day-expand">▾</span>
         </div>
         <div class="daily-detail" id="detail-day-${i}" style="display:none">
@@ -365,9 +397,11 @@ const App = {
       </div>`
     }).join('')
 
-    const loadingEl = this.$app.querySelector('.loading')
-    if (loadingEl) {
-      loadingEl.outerHTML = `
+    const loadingEl = this.$app.querySelector('.skeleton-wrap')
+    const loadingText = this.$app.querySelector('.loading')
+    if (loadingEl) loadingEl.remove()
+    if (loadingText) {
+      loadingText.outerHTML = `
         <div class="section-title"><span class="section-icon">📍</span>当前天气</div>
         <div class="weather-now">
           <div class="now-main">
@@ -510,6 +544,61 @@ const App = {
         </div>
       `
     } catch (e) {}
+  },
+
+  showMine() {
+    const favs = this.getFavorites()
+    const favPeaks = peaks.filter(p => favs.includes(p.id))
+
+    this.$app.innerHTML = `
+      <div class="page-header">
+        <h1>我的</h1>
+        <p>收藏了 ${favPeaks.length} 座山峰</p>
+      </div>
+      <div class="section-title"><span class="section-icon">♥</span>我的收藏</div>
+      ${favPeaks.length > 0 ? `<div class="peak-list">
+        ${favPeaks.map(p => `
+          <div class="peak-card" data-id="${p.id}">
+            <div class="peak-info">
+              <h3>${p.name}</h3>
+              <div class="peak-meta">
+                <span>${p.elevation}m</span>
+                <span>${p.province}</span>
+                <span>${p.regionTag}</span>
+              </div>
+            </div>
+            <div class="peak-actions">
+              <span class="fav-btn fav-active" data-fav="${p.id}">♥</span>
+              <span class="difficulty-badge diff-${p.difficulty}">★${p.difficulty}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>` : '<div class="empty-state"><div class="icon">💡</div><p>还没有收藏山峰<br>在山峰列表点击 ♥ 收藏</p></div>'}
+      <div class="section-title" style="margin-top:30px"><span class="section-icon">⚙️</span>设置</div>
+      <div class="mine-actions">
+        <div class="mine-btn" id="clear-cache-btn">清除缓存并刷新</div>
+      </div>
+    `
+
+    this.$app.querySelectorAll('.peak-card').forEach(card => {
+      card.addEventListener('click', () => { location.hash = `#/peak/${card.dataset.id}` })
+    })
+
+    this.$app.querySelectorAll('.fav-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.toggleFavorite(btn.dataset.fav)
+        this.showMine()
+      })
+    })
+
+    document.getElementById('clear-cache-btn').addEventListener('click', () => {
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))).then(() => location.reload())
+      } else {
+        location.reload()
+      }
+    })
   },
 
   async showAlerts() {
