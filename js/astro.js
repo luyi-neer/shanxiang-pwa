@@ -95,12 +95,14 @@ const Astro = {
     return 5
   },
 
-  getStargazingScore(moonIllumination, cloudCover, milkyWayVisible, bortle) {
+  getStargazingScore(moonIllumination, cloudCover, milkyWayVisible, bortle, transparency, seeing) {
     let score = 100
-    score -= moonIllumination * 35
-    score -= (cloudCover / 100) * 40
-    score -= Math.max(0, (bortle - 2)) * 5
-    if (!milkyWayVisible) score -= 10
+    score -= (cloudCover / 100) * 35
+    score -= moonIllumination * 25
+    score -= ((transparency - 1) / 7) * 15
+    score -= ((seeing - 1) / 7) * 10
+    score -= ((bortle - 1) / 6) * 10
+    if (!milkyWayVisible) score -= 5
     score = Math.max(0, Math.min(100, Math.round(score)))
 
     let rating, ratingClass
@@ -112,11 +114,15 @@ const Astro = {
     return { score, rating, ratingClass }
   },
 
-  getStargazingForecast(peak, hourlyCloudCover) {
+  getStargazingForecast(peak, hourlyCloudCover, astroData) {
     const now = new Date()
     const moon = this.getMoonPhase(now)
     const milkyWay = this.getMilkyWayVisibility(peak.lat, peak.lon, now)
-    const bortle = this.estimateBortle(peak.elevation, peak.difficulty)
+    const bortle = peak.bortle || this.estimateBortle(peak.elevation, peak.difficulty)
+
+    const astro = astroData || { seeing: 4, transparency: 4 }
+    const seeing = astro.seeing
+    const transparency = astro.transparency
 
     let avgCloud = 50
     if (hourlyCloudCover && hourlyCloudCover.length > 0) {
@@ -129,8 +135,8 @@ const Astro = {
       }
     }
 
-    const result = this.getStargazingScore(moon.illumination, avgCloud, milkyWay.visible, bortle)
+    const result = this.getStargazingScore(moon.illumination, avgCloud, milkyWay.visible, bortle, transparency, seeing)
 
-    return { ...result, moon, milkyWay, bortle, avgCloud: Math.round(avgCloud) }
+    return { ...result, moon, milkyWay, bortle, avgCloud: Math.round(avgCloud), seeing, transparency }
   }
 }

@@ -1,4 +1,4 @@
-const CACHE = 'shanxiang-v14'
+const CACHE = 'shanxiang-v15'
 const ASSETS = ['/', 'index.html', 'css/style.css', 'js/peaks.js', 'js/astro.js', 'js/api.js', 'js/app.js', 'manifest.json']
 
 self.addEventListener('install', e => {
@@ -14,7 +14,7 @@ self.addEventListener('activate', e => {
 })
 
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('api.open-meteo.com') || e.request.url.includes('devapi.qweather.com')) {
+  if (e.request.url.includes('api.open-meteo.com') || e.request.url.includes('devapi.qweather.com') || e.request.url.includes('7timer.info')) {
     e.respondWith(fetch(e.request).catch(() => new Response('{"error":"offline"}', { headers: { 'Content-Type': 'application/json' } })))
     return
   }

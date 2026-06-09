@@ -424,13 +424,17 @@ const App = {
     this.renderStargazing(peak, h.cloud_cover || [])
   },
 
-  renderStargazing(peak, cloudCover) {
+  async renderStargazing(peak, cloudCover) {
     const container = document.getElementById('stargazing-container')
     if (!container) return
     if (typeof Astro === 'undefined') { container.innerHTML = '<div class="empty-state"><p>星空模块未加载</p></div>'; return }
 
     try {
-      const forecast = Astro.getStargazingForecast(peak, cloudCover)
+      let astroData = null
+      if (typeof WeatherAPI !== 'undefined' && WeatherAPI.getAstroForecast) {
+        astroData = await WeatherAPI.getAstroForecast(peak.lat, peak.lon)
+      }
+      const forecast = Astro.getStargazingForecast(peak, cloudCover, astroData)
     const mw = forecast.milkyWay
     const moon = forecast.moon
 
