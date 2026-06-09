@@ -131,12 +131,14 @@ body {
   cursor: pointer;
   transition: all .2s;
   padding: 8px;
-  min-width: 38px;
-  min-height: 38px;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  line-height: 1;
+  aspect-ratio: 1;
 }
 
 .fav-btn.fav-active { color: #e53935; transform: scale(1.1); }

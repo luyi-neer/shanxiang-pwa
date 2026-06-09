@@ -119,72 +119,52 @@ const App = {
         ${filtered.length === 0 ? '<div class="empty-state"><div class="icon">🔍</div><p>无匹配山峰</p></div>' : ''}
       `
 
-      this.$app.querySelectorAll('.custom-select').forEach(sel => {
-        const trigger = sel.querySelector('.select-trigger')
-        const options = sel.querySelector('.select-options')
-        trigger.addEventListener('click', (e) => {
-          e.stopPropagation()
-          this.$app.querySelectorAll('.select-options.open').forEach(o => { if (o !== options) o.classList.remove('open') })
-          options.classList.toggle('open')
-          const search = sel.querySelector('.select-search')
-          if (search && options.classList.contains('open')) search.focus()
-        })
-        sel.querySelectorAll('.select-option').forEach(opt => {
-          opt.addEventListener('click', (e) => {
-            e.stopPropagation()
-            options.classList.remove('open')
-            if (sel.id === 'province-select') {
-              selectedProvince = opt.dataset.val
-              render()
-            } else if (sel.id === 'sort-select') {
-              sortBy = opt.dataset.val
-              render()
-            }
-          })
-        })
-        const search = sel.querySelector('.select-search')
-        if (search) {
-          search.addEventListener('click', e => e.stopPropagation())
-          search.addEventListener('input', (e) => {
-            const q = e.target.value.toLowerCase()
-            sel.querySelectorAll('.select-option').forEach(opt => {
-              opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none'
-            })
-          })
-        }
-      })
-
-      this.$app.addEventListener('click', (e) => {
-        if (!e.target.closest('.custom-select')) {
-          this.$app.querySelectorAll('.select-options.open').forEach(o => o.classList.remove('open'))
-        }
-      })
-
-      this.$app.querySelectorAll('.filter-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-          selectedDifficulty = parseInt(chip.dataset.diff)
-          render()
-        })
-      })
-
-      this.$app.querySelectorAll('.fav-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation()
-          this.toggleFavorite(btn.dataset.fav)
-          render()
-        })
-      })
-
-      this.$app.querySelectorAll('.peak-card').forEach(card => {
-        card.addEventListener('click', () => {
-          location.hash = `#/peak/${card.dataset.id}`
-        })
-      })
-
-      this.initPullRefresh(render)
     }
 
     render()
+
+    this.$app.addEventListener('click', (e) => {
+      const trigger = e.target.closest('.select-trigger')
+      if (trigger) {
+        e.stopPropagation()
+        const sel = trigger.closest('.custom-select')
+        const options = sel.querySelector('.select-options')
+        this.$app.querySelectorAll('.select-options.open').forEach(o => { if (o !== options) o.classList.remove('open') })
+        options.classList.toggle('open')
+        const search = sel.querySelector('.select-search')
+        if (search && options.classList.contains('open')) setTimeout(() => search.focus(), 50)
+        return
+      }
+      const opt = e.target.closest('.select-option')
+      if (opt) {
+        e.stopPropagation()
+        const sel = opt.closest('.custom-select')
+        sel.querySelector('.select-options').classList.remove('open')
+        if (sel.id === 'province-select') { selectedProvince = opt.dataset.val; render() }
+        else if (sel.id === 'sort-select') { sortBy = opt.dataset.val; render() }
+        return
+      }
+      if (e.target.closest('.select-search')) { e.stopPropagation(); return }
+      const chip = e.target.closest('.filter-chip')
+      if (chip) { selectedDifficulty = parseInt(chip.dataset.diff); render(); return }
+      const fav = e.target.closest('.fav-btn')
+      if (fav) { e.stopPropagation(); this.toggleFavorite(fav.dataset.fav); render(); return }
+      const card = e.target.closest('.peak-card')
+      if (card) { location.hash = `#/peak/${card.dataset.id}`; return }
+      this.$app.querySelectorAll('.select-options.open').forEach(o => o.classList.remove('open'))
+    })
+
+    this.$app.addEventListener('input', (e) => {
+      if (e.target.classList.contains('select-search')) {
+        const q = e.target.value.toLowerCase()
+        const sel = e.target.closest('.custom-select')
+        sel.querySelectorAll('.select-option').forEach(opt => {
+          opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none'
+        })
+      }
+    })
+
+    this.initPullRefresh(render)
   },
 
   initPullRefresh(refreshFn) {
