@@ -73,15 +73,21 @@ const App = {
         </div>
         <div class="pull-hint" id="pull-hint">↓ 下拉刷新</div>
         <div class="filter-bar">
-          <select class="province-select" id="province-filter">
-            <option value="">全部省份</option>
-            ${provinces.map(p => `<option value="${p}" ${p === selectedProvince ? 'selected' : ''}>${p}</option>`).join('')}
-          </select>
-          <select class="province-select" id="sort-filter">
-            <option value="default" ${sortBy === 'default' ? 'selected' : ''}>默认排序</option>
-            <option value="elevation" ${sortBy === 'elevation' ? 'selected' : ''}>海拔↓</option>
-            <option value="difficulty" ${sortBy === 'difficulty' ? 'selected' : ''}>难度↓</option>
-          </select>
+          <div class="custom-select" id="province-select">
+            <div class="select-trigger">${selectedProvince || '全部省份'} <span class="select-arrow">▾</span></div>
+            <div class="select-options">
+              <div class="select-option ${!selectedProvince ? 'selected' : ''}" data-val="">全部省份</div>
+              ${provinces.map(p => `<div class="select-option ${p === selectedProvince ? 'selected' : ''}" data-val="${p}">${p}</div>`).join('')}
+            </div>
+          </div>
+          <div class="custom-select" id="sort-select">
+            <div class="select-trigger">${sortBy === 'default' ? '默认排序' : sortBy === 'elevation' ? '海拔↓' : '难度↓'} <span class="select-arrow">▾</span></div>
+            <div class="select-options">
+              <div class="select-option ${sortBy === 'default' ? 'selected' : ''}" data-val="default">默认排序</div>
+              <div class="select-option ${sortBy === 'elevation' ? 'selected' : ''}" data-val="elevation">海拔↓</div>
+              <div class="select-option ${sortBy === 'difficulty' ? 'selected' : ''}" data-val="difficulty">难度↓</div>
+            </div>
+          </div>
         </div>
         <div class="filter-bar">
           ${[0,1,2,3,4,5].map(d => `<span class="filter-chip ${d === selectedDifficulty ? 'active' : ''}" data-diff="${d}">${d === 0 ? '全部' : '★'.repeat(d)}</span>`).join('')}
@@ -109,14 +115,31 @@ const App = {
         ${filtered.length === 0 ? '<div class="empty-state"><div class="icon">🔍</div><p>无匹配山峰</p></div>' : ''}
       `
 
-      document.getElementById('province-filter').addEventListener('change', e => {
-        selectedProvince = e.target.value
-        render()
+      document.querySelectorAll('.custom-select').forEach(sel => {
+        const trigger = sel.querySelector('.select-trigger')
+        const options = sel.querySelector('.select-options')
+        trigger.addEventListener('click', (e) => {
+          e.stopPropagation()
+          document.querySelectorAll('.select-options.open').forEach(o => { if (o !== options) o.classList.remove('open') })
+          options.classList.toggle('open')
+        })
+        sel.querySelectorAll('.select-option').forEach(opt => {
+          opt.addEventListener('click', (e) => {
+            e.stopPropagation()
+            options.classList.remove('open')
+            if (sel.id === 'province-select') {
+              selectedProvince = opt.dataset.val
+              render()
+            } else if (sel.id === 'sort-select') {
+              sortBy = opt.dataset.val
+              render()
+            }
+          })
+        })
       })
 
-      document.getElementById('sort-filter').addEventListener('change', e => {
-        sortBy = e.target.value
-        render()
+      document.addEventListener('click', () => {
+        document.querySelectorAll('.select-options.open').forEach(o => o.classList.remove('open'))
       })
 
       this.$app.querySelectorAll('.filter-chip').forEach(chip => {
