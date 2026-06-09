@@ -27,7 +27,7 @@
   <script src="js/app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
     }
     if (window.Capacitor) {
       document.documentElement.style.setProperty('--safe-top', '32px');

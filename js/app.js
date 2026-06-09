@@ -387,9 +387,11 @@ const App = {
 
   renderStargazing(peak, cloudCover) {
     const container = document.getElementById('stargazing-container')
-    if (!container || typeof Astro === 'undefined') return
+    if (!container) return
+    if (typeof Astro === 'undefined') { container.innerHTML = '<div class="empty-state"><p>星空模块未加载</p></div>'; return }
 
-    const forecast = Astro.getStargazingForecast(peak, cloudCover)
+    try {
+      const forecast = Astro.getStargazingForecast(peak, cloudCover)
     const mw = forecast.milkyWay
     const moon = forecast.moon
 
@@ -436,6 +438,9 @@ const App = {
         <div class="star-tip">${this.getStarTip(forecast)}</div>
       </div>
     `
+    } catch(e) {
+      container.innerHTML = `<div class="section-title"><span class="section-icon">🌌</span>今晚星空预测</div><div class="empty-state"><p>星空数据计算异常</p></div>`
+    }
   },
 
   getStarTip(forecast) {
