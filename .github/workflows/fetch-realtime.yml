@@ -17,10 +17,10 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install puppeteer
+        run: npm install puppeteer
+
       - name: Fetch realtime data
-        env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          GOOGLE_CX: ${{ secrets.GOOGLE_CX }}
         run: node scripts/fetch-realtime.js
 
       - name: Commit and push
