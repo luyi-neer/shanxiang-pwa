@@ -8,8 +8,7 @@ const WeatherAPI = {
       hourly: 'temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation_probability,uv_index,apparent_temperature,visibility,cloud_cover',
       daily: 'temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,uv_index_max,weathercode',
       timezone: 'Asia/Shanghai',
-      forecast_days: 7,
-      models: 'ecmwf_ifs025,gfs_seamless,icon_seamless'
+      forecast_days: 7
     })
     if (elevation) params.set('elevation', elevation)
     const res = await fetch(`${this.BASE_URL}?${params}`)
