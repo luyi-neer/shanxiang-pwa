@@ -277,7 +277,13 @@ const App = {
     this.loadRealtime(peak)
 
     try {
-      const data = await WeatherAPI.getForecast(peak.lat, peak.lon)
+      const [data, qwHourly] = await Promise.all([
+        WeatherAPI.getForecast(peak.lat, peak.lon, peak.elevation),
+        WeatherAPI.getQWeatherHourly(peak.lat, peak.lon)
+      ])
+      if (data.hourly && data.hourly.precipitation_probability) {
+        data.hourly.precipitation_probability = WeatherAPI.fusePrecipitation(data.hourly.precipitation_probability, qwHourly)
+      }
       this.renderWeather(data, peak)
     } catch (e) {
       this.$app.querySelector('.loading').innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>天气数据加载失败</p></div>`
