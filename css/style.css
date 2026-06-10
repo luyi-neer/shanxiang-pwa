@@ -439,6 +439,7 @@ body {
 .custom-select {
   position: relative;
   min-width: 100px;
+  z-index: 100;
 }
 
 .select-trigger {
