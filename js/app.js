@@ -278,7 +278,7 @@ const App = {
 
     try {
       const [data, qwHourly] = await Promise.all([
-        WeatherAPI.getForecast(peak.lat, peak.lon, peak.elevation),
+        WeatherAPI.getForecast(peak.lat, peak.lon),
         WeatherAPI.getQWeatherHourly(peak.lat, peak.lon)
       ])
       if (data.hourly && data.hourly.precipitation_probability) {

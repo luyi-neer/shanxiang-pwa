@@ -160,7 +160,7 @@ body {
   overflow: visible;
   margin-bottom: 8px;
   position: relative;
-  z-index: 50;
+  z-index: 999;
 }
 
 .peak-meta {
