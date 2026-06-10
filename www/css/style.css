@@ -77,9 +77,8 @@ body {
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
-  overflow-x: auto;
+  overflow: visible;
   padding: 4px 0;
-  -webkit-overflow-scrolling: touch;
   position: relative;
   z-index: 10;
 }

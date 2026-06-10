@@ -1,4 +1,4 @@
-const CACHE = 'shanxiang-v17'
+const CACHE = 'shanxiang-v18'
 const ASSETS = ['/', 'index.html', 'css/style.css', 'js/peaks.js', 'js/astro.js', 'js/api.js', 'js/app.js', 'manifest.json']
 
 self.addEventListener('install', e => {
