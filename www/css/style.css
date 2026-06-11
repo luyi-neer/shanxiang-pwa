@@ -77,7 +77,8 @@ body {
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
-  overflow: visible;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 4px 0;
   position: relative;
   z-index: 1;
@@ -85,6 +86,7 @@ body {
 
 .filter-bar:has(.custom-select) {
   z-index: 100;
+  overflow: visible;
 }
 
 .filter-bar::-webkit-scrollbar { display: none; }
